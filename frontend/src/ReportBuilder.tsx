@@ -1,26 +1,38 @@
-const CONFIDENCE_COLORS = {
+import type { AgentId, Confidence, ReportSection, VariantData } from './types'
+
+const CONFIDENCE_COLORS: Record<Confidence, string> = {
   high: '#10b981',
   medium: '#f59e0b',
   low: '#ef4444',
 }
 
-const AGENT_ICONS = {
+const AGENT_ICONS: Record<AgentId, string> = {
   variant_decoder: '🧬',
   protein_impact: '⚗️',
   pharmacogenomics: '💊',
   literature_clinical: '📚',
 }
 
-function renderMarkdown(text) {
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function renderMarkdown(text: string): string {
   if (!text) return ''
-  return text
+  return escapeHtml(text)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
     .replace(/^- (.+)$/gm, '<li>$1</li>')
     .replace(/\n/g, '<br/>')
 }
 
-export default function ReportBuilder({ sections, variantData, isComplete }) {
+interface Props {
+  sections: ReportSection[]
+  variantData: VariantData | null
+  isComplete: boolean
+}
+
+export default function ReportBuilder({ sections, variantData, isComplete }: Props) {
   if (!sections.length && !variantData) {
     return (
       <div className="report-empty">

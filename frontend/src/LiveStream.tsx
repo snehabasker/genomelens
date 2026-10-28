@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
+import type { GenomeEvent } from './types'
 
-const EVENT_COLORS = {
+const EVENT_COLORS: Record<GenomeEvent['type'], string> = {
   session_start: '#6366f1',
   session_complete: '#10b981',
   session_error: '#ef4444',
@@ -17,60 +18,68 @@ const EVENT_COLORS = {
   report_section: '#94a3b8',
 }
 
-function formatEvent(event) {
-  const { type, agent, data } = event
-  const color = EVENT_COLORS[type] || '#94a3b8'
+function formatEvent(event: GenomeEvent): { text: string; color: string } {
+  const color = EVENT_COLORS[event.type] ?? '#94a3b8'
 
   let text = ''
-  switch (type) {
+  switch (event.type) {
     case 'session_start':
-      text = `▶ Analysis started: "${data.query}"`
+      text = `▶ Analysis started: "${event.data.query}"`
+      break
+    case 'session_error':
+      text = `✗ Session error: ${event.data.error}`
       break
     case 'agent_start':
-      text = `[${agent}] ${data.message || 'Starting...'}`
+      text = `[${event.agent}] ${event.data.message || 'Starting...'}`
       break
     case 'agent_progress':
-      text = `  → ${data.message}`
+      text = `  → ${event.data.message}`
       break
     case 'agent_done':
-      text = `[${agent}] ✓ Complete`
+      text = `[${event.agent}] ✓ Complete`
       break
     case 'agent_error':
-      text = `[${agent}] ✗ ${data.error}`
+      text = `[${event.agent}] ✗ ${event.data.error}`
       break
     case 'sequence_loaded':
-      text = `  Gene: ${data.gene} | Chr${data.chromosome}:${data.position} | Seq: ${data.sequence?.slice(0, 20)}...`
+      text = `  Gene: ${event.data.gene} | Chr${event.data.chromosome}:${event.data.position} | Seq: ${event.data.sequence?.slice(0, 20)}...`
       break
     case 'helix_highlight':
-      text = `  🔴 Mutation at position ${data.position}: ${data.ref} → ${data.alt} (${data.type})`
+      text = `  🔴 Mutation at position ${event.data.position}: ${event.data.ref} → ${event.data.alt} (${event.data.type})`
       break
     case 'variant_decoded':
-      text = `  ✓ ${data.gene} | ${data.variant_type} | ${data.cdna_change || data.rs_id}`
+      text = `  ✓ ${event.data.gene} | ${event.data.variant_type} | ${event.data.cdna_change || event.data.rs_id}`
       break
     case 'protein_impact':
-      text = `  Protein: ${data.protein_name} | Impact: ${data.impact} | ${data.consequence}`
+      text = `  Protein: ${event.data.protein_name} | Impact: ${event.data.impact} | ${event.data.consequence}`
       break
     case 'drug_interactions':
-      text = `  ${data.drug_count} drug interaction(s) found for ${data.gene}`
+      text = `  ${event.data.drug_count} drug interaction(s) found for ${event.data.gene}`
       break
     case 'literature_found':
-      text = `  ClinVar: ${data.clinvar_significance || 'N/A'} | Papers: ${data.papers?.length || 0}`
+      text = `  ClinVar: ${event.data.clinvar_significance || 'N/A'} | Papers: ${event.data.papers?.length || 0}`
       break
     case 'report_section':
-      text = `  📄 Report section: "${data.title}"`
+      text = `  📄 Report section: "${event.data.title}"`
       break
     case 'session_complete':
-      text = `■ Analysis complete — ${data.gene || ''} ${data.variant || ''}`
+      text = `■ Analysis complete — ${event.data.gene || ''} ${event.data.variant || ''}`
       break
-    default:
-      text = `${type}: ${JSON.stringify(data).slice(0, 60)}`
+    default: {
+      const unknownEvent: never = event
+      text = JSON.stringify(unknownEvent).slice(0, 60)
+    }
   }
 
   return { text, color }
 }
 
-export default function LiveStream({ events }) {
-  const bottomRef = useRef(null)
+interface Props {
+  events: GenomeEvent[]
+}
+
+export default function LiveStream({ events }: Props) {
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

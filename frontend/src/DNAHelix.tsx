@@ -1,18 +1,35 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
+import type { Mutation } from './types'
 
-const BASE_COLORS = { A: '#3b82f6', T: '#ef4444', G: '#10b981', C: '#f59e0b', N: '#4b5563' }
-const COMPLEMENT = { A: 'T', T: 'A', G: 'C', C: 'G', N: 'N' }
+const BASE_COLORS: Record<string, string> = { A: '#3b82f6', T: '#ef4444', G: '#10b981', C: '#f59e0b', N: '#4b5563' }
+const COMPLEMENT: Record<string, string> = { A: 'T', T: 'A', G: 'C', C: 'G', N: 'N' }
 
 function generatePlaceholderSeq(len = 40) {
   const bases = ['A', 'T', 'G', 'C']
   return Array.from({ length: len }, () => bases[Math.floor(Math.random() * 4)]).join('')
 }
 
-export default function DNAHelix({ sequence = '', variantPosition = null, mutation = null, isScanning = false }) {
-  const svgRef = useRef(null)
-  const animFrameRef = useRef(null)
+interface Props {
+  sequence?: string
+  variantPosition?: number | null
+  mutation?: Mutation | null
+  isScanning?: boolean
+}
+
+interface HelixNode {
+  base: string
+  comp: string
+  y: number
+  x1: number
+  x2: number
+  isVariant: boolean
+  i: number
+}
+
+export default function DNAHelix({ sequence = '', variantPosition = null, mutation = null, isScanning = false }: Props) {
+  const svgRef = useRef<SVGSVGElement>(null)
   const offsetRef = useRef(0)
-  const [tick, setTick] = useState(0)
+  const [, setTick] = useState(0)
 
   // Animate scanning scroll
   useEffect(() => {
@@ -31,10 +48,9 @@ export default function DNAHelix({ sequence = '', variantPosition = null, mutati
   const H = 520
   const cx = W / 2
   const amplitude = 60
-  const period = H / 3
   const baseSpacing = H / visibleCount
 
-  const nodes = []
+  const nodes: HelixNode[] = []
   for (let i = 0; i < visibleCount; i++) {
     const base = displaySeq[i] || 'N'
     const comp = COMPLEMENT[base] || 'N'

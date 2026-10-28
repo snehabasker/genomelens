@@ -1,9 +1,13 @@
 import { useState, useCallback } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { useWebSocket } from './useWebSocket'
 import DNAHelix from './DNAHelix'
 import AgentNodes from './AgentNodes'
 import LiveStream from './LiveStream'
 import ReportBuilder from './ReportBuilder'
+import type {
+  AgentId, AgentState, GenomeEvent, HelixData, ReportSection, VariantData,
+} from './types'
 
 const EXAMPLE_QUERIES = [
   'rs1801133',
@@ -13,7 +17,9 @@ const EXAMPLE_QUERIES = [
   'TP53 c.817C>T',
 ]
 
-const INITIAL_AGENT_STATES = {
+const INITIAL_HELIX: HelixData = { sequence: '', variantPosition: null, mutation: null }
+
+const INITIAL_AGENT_STATES: Record<AgentId, AgentState> = {
   variant_decoder: { status: 'idle', message: '' },
   protein_impact: { status: 'idle', message: '' },
   pharmacogenomics: { status: 'idle', message: '' },
@@ -21,86 +27,85 @@ const INITIAL_AGENT_STATES = {
 }
 
 export default function App() {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [events, setEvents] = useState([])
-  const [agentStates, setAgentStates] = useState(INITIAL_AGENT_STATES)
-  const [helixData, setHelixData] = useState({ sequence: '', variantPosition: null, mutation: null })
-  const [reportSections, setReportSections] = useState([])
-  const [variantData, setVariantData] = useState(null)
+  const [events, setEvents] = useState<GenomeEvent[]>([])
+  const [agentStates, setAgentStates] = useState<Record<AgentId, AgentState>>(INITIAL_AGENT_STATES)
+  const [helixData, setHelixData] = useState<HelixData>(INITIAL_HELIX)
+  const [reportSections, setReportSections] = useState<ReportSection[]>([])
+  const [variantData, setVariantData] = useState<VariantData | null>(null)
   const [isComplete, setIsComplete] = useState(false)
 
-  const handleEvent = useCallback((event) => {
+  const handleEvent = useCallback((event: GenomeEvent) => {
     setEvents(prev => [...prev, event])
-    const { type, agent, data } = event
 
-    switch (type) {
+    switch (event.type) {
       case 'session_start':
         setIsAnalyzing(true)
         setIsComplete(false)
         setReportSections([])
         setVariantData(null)
-        setHelixData({ sequence: '', variantPosition: null, mutation: null })
+        setHelixData(INITIAL_HELIX)
         setAgentStates({ ...INITIAL_AGENT_STATES })
         break
 
       case 'agent_start':
         setAgentStates(prev => ({
           ...prev,
-          [agent]: { status: 'running', message: data.message || '' },
+          [event.agent]: { status: 'running', message: event.data.message || '' },
         }))
         break
 
       case 'agent_progress':
         setAgentStates(prev => ({
           ...prev,
-          [agent]: { ...prev[agent], message: data.message || '' },
+          [event.agent]: { ...prev[event.agent], message: event.data.message || '' },
         }))
         break
 
       case 'agent_done':
         setAgentStates(prev => ({
           ...prev,
-          [agent]: { status: 'done', message: 'Complete' },
+          [event.agent]: { status: 'done', message: 'Complete' },
         }))
         break
 
       case 'agent_error':
         setAgentStates(prev => ({
           ...prev,
-          [agent]: { status: 'error', message: data.error || 'Error' },
+          [event.agent]: { status: 'error', message: event.data.error || 'Error' },
         }))
         break
 
       case 'sequence_loaded':
         setHelixData(prev => ({
           ...prev,
-          sequence: data.sequence || '',
-          variantPosition: data.variant_position ?? null,
+          sequence: event.data.sequence || '',
+          variantPosition: event.data.variant_position ?? null,
         }))
         break
 
       case 'helix_highlight':
-        if (data.action === 'mutation_found') {
+        if (event.data.action === 'mutation_found') {
           setHelixData(prev => ({
             ...prev,
-            mutation: { type: data.type, ref: data.ref, alt: data.alt },
-            variantPosition: data.position ?? prev.variantPosition,
+            mutation: { type: event.data.type, ref: event.data.ref, alt: event.data.alt },
+            variantPosition: event.data.position ?? prev.variantPosition,
           }))
         }
         break
 
       case 'variant_decoded':
-        setVariantData(data)
+        setVariantData(event.data)
         break
 
       case 'report_section':
         setReportSections(prev => [...prev, {
-          agent: agent,
-          title: data.title,
-          content: data.content,
-          confidence: data.confidence,
-          sources: data.sources || [],
+          agent: event.agent,
+          title: event.data.title,
+          content: event.data.content,
+          confidence: event.data.confidence,
+          sources: event.data.sources || [],
         }])
         break
 
@@ -120,7 +125,7 @@ export default function App() {
 
   const { status, send } = useWebSocket(handleEvent)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent | KeyboardEvent) => {
     e.preventDefault()
     if (!query.trim() || isAnalyzing) return
     setEvents([])
