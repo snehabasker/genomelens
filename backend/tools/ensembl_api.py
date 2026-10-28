@@ -32,11 +32,13 @@ async def get_sequence(region: str, species: str = "human") -> str:
     async with httpx.AsyncClient(timeout=20) as client:
         r = await client.get(
             f"{BASE}/sequence/region/{species}/{region}",
-            headers={**HEADERS, "Accept": "text/plain"},
+            headers={"Accept": "text/plain"},
         )
         if r.status_code != 200:
             return ""
-        return r.text.strip().upper()
+        seq = r.text.strip().upper()
+        # Guard against error bodies being mistaken for DNA
+        return seq if seq and set(seq) <= set("ACGTN") else ""
 
 
 async def vep_hgvs(hgvs_notation: str) -> list:

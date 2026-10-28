@@ -135,7 +135,7 @@ Be concise (300-400 words). Use markdown formatting. Cite ClinVar or literature 
             client = anthropic.AsyncAnthropic()
             response = await client.messages.create(
                 model="claude-opus-4-8",
-                max_tokens=1024,
+                max_tokens=4096,
                 thinking={"type": "adaptive"},
                 messages=[{"role": "user", "content": prompt}],
             )

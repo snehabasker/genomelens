@@ -12,7 +12,7 @@ async def get_protein_by_gene(gene: str) -> dict:
             params={
                 "query": f"gene:{gene} AND organism_id:9606 AND reviewed:true",
                 "format": "json",
-                "fields": "accession,id,gene_names,protein_name,sequence,ft_domain,ft_region,ft_active_site,length",
+                "fields": "accession,id,gene_names,protein_name,sequence,ft_domain,ft_region,ft_act_site,ft_binding,length",
                 "size": "1",
             },
             headers={"Accept": "application/json"},
