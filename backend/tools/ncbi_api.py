@@ -1,4 +1,4 @@
-import httpx
+from tools import net as httpx
 import os
 from typing import Optional
 
@@ -28,12 +28,23 @@ async def search_snp(rs_id: str) -> dict:
     gene_name = genes[0].get("name", "") if genes else snp.get("gene", "")
     chrpos = snp.get("chrpos", "")  # e.g. "17:43094464"
     chrom, pos = (chrpos.split(":") + [""])[:2]
+    # dbSNP's summary has no "alleles" field. The alleles live in the SPDI list, e.g.
+    # "NC_000011.10:5227001:T:A,NC_000011.10:5227001:T:C": ref T, alts A and C (multi-allelic).
+    # (The old code defaulted to "A/G" when the field was missing, i.e. it invented an allele.)
+    ref, alts = "", []
+    for item in (snp.get("spdi") or "").split(","):
+        parts = item.split(":")
+        if len(parts) == 4 and parts[0].startswith("NC_") and len(parts[2]) == 1 and len(parts[3]) == 1:
+            ref = ref or parts[2]
+            if parts[3] not in alts:
+                alts.append(parts[3])
     return {
         "rs_id": rs_id,
+        "ref_allele": ref,
+        "alt_alleles": alts,
         "gene": gene_name,
         "chromosome": chrom,
         "position": int(pos) if pos.isdigit() else None,
-        "alleles": snp.get("alleles", ""),
         "class": snp.get("snp_class", "snp"),
         "clinical_significance": snp.get("clinical_significance", ""),
         "fxn_class": snp.get("fxn_class", ""),

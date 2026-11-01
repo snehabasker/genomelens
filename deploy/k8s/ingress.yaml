@@ -1,0 +1,22 @@
+# GKE Ingress with a Google-managed cert. Replace the host and reserve a global static IP named genome-lens-ip.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: genome-lens
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: genome-lens-ip
+    networking.gke.io/managed-certificates: genome-lens
+    kubernetes.io/ingress.class: gce
+spec:
+  rules:
+    - host: genome-lens.example.com
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: genome-lens, port: {number: 80}}}}
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: genome-lens
+spec:
+  domains: [genome-lens.example.com]

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: genome-lens
+spec:
+  selector: {app: genome-lens}
+  ports: [{name: http, port: 80, targetPort: http}]

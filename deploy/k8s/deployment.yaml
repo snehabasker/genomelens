@@ -1,0 +1,41 @@
+# Secret (not committed):
+#   kubectl -n genome-lens create secret generic genome-lens --from-literal=ANTHROPIC_API_KEY=sk-ant-...
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genome-lens
+spec:
+  replicas: 1                     # SQLite cache + rate limiter are per-pod; move to Redis/Postgres before scaling out
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: genome-lens}
+  template:
+    metadata:
+      labels: {app: genome-lens}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: app
+          image: genome-lens
+          ports: [{containerPort: 8080, name: http}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom:
+            - configMapRef: {name: genome-lens}
+            - secretRef: {name: genome-lens, optional: true}
+          readinessProbe: {httpGet: {path: /api/health, port: http}, periodSeconds: 5}
+          livenessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 15, periodSeconds: 20}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes:
+        - name: tmp
+          emptyDir: {}

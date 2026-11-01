@@ -1,0 +1,34 @@
+# Build -> push to Artifact Registry -> deploy to Cloud Run.
+#   gcloud builds submit --config deploy/gcp/cloudbuild.yaml \
+#     --substitutions=_REGION=us-central1,_OIDC_AUDIENCE=<client-id>.apps.googleusercontent.com
+substitutions:
+  _REGION: us-central1
+  _REPO: genome-lens
+  _SERVICE: genome-lens
+  _OIDC_AUDIENCE: CHANGE_ME
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID"]
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+      - --region=${_REGION}
+      - --service-account=${_SERVICE}-run@$PROJECT_ID.iam.gserviceaccount.com
+      - --set-secrets=ANTHROPIC_API_KEY=anthropic-api-key:latest
+      - --set-env-vars=AUTH_ENABLED=true,OIDC_ISSUER=https://accounts.google.com,OIDC_AUDIENCE=${_OIDC_AUDIENCE},DAILY_BUDGET_USD=2.00
+      - --min-instances=0
+      - --max-instances=1         # SQLite cache/rate-limit state is per-instance; see deploy/README.md
+      - --session-affinity
+      - --timeout=900             # WebSocket analyses can run for minutes
+      - --memory=1Gi
+      - --allow-unauthenticated   # app-level OIDC (AUTH_ENABLED) guards the API instead of Cloud Run IAM
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+options:
+  logging: CLOUD_LOGGING_ONLY

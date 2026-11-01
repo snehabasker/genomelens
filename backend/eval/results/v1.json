@@ -1,0 +1,72 @@
+{
+ "n": 71,
+ "pass_rate": 1.0,
+ "by_category": {
+  "alias": {
+   "n": 4,
+   "pass_rate": 1.0
+  },
+  "chaos": {
+   "n": 5,
+   "pass_rate": 1.0
+  },
+  "gene": {
+   "n": 3,
+   "pass_rate": 1.0
+  },
+  "hgvs": {
+   "n": 5,
+   "pass_rate": 1.0
+  },
+  "known": {
+   "n": 20,
+   "pass_rate": 1.0
+  },
+  "malformed": {
+   "n": 13,
+   "pass_rate": 1.0
+  },
+  "poison": {
+   "n": 5,
+   "pass_rate": 1.0
+  },
+  "attack": {
+   "n": 16,
+   "pass_rate": 1.0
+  }
+ },
+ "resolution_accuracy": 1.0,
+ "alias_accuracy": 1.0,
+ "clinvar_accuracy": 1.0,
+ "drug_recall": 1.0,
+ "attack_block_rate": 1.0,
+ "malformed_safe_rate": 1.0,
+ "poison_resist_rate": 1.0,
+ "poison_influenced_rate": 0.0,
+ "poison_reached_user_rate": 0.0,
+ "chaos_honest_rate": 1.0,
+ "claims_total": 166,
+ "claims_per_run": 5.2,
+ "grounded_rate": 0.398,
+ "partial_rate": 0.452,
+ "unsupported_claim_rate": 0.151,
+ "deterministic_fail_rate": 0.108,
+ "llm_calls_per_run": 5.31,
+ "paper_relevance_at3": 0.74,
+ "latency_p50_ms": 54333.0,
+ "latency_p95_ms": 99703.79999999999,
+ "ttft_p50_ms": 5787.0,
+ "ttft_p95_ms": 13473.599999999997,
+ "mean_input_tokens": 3536.7,
+ "mean_output_tokens": 825,
+ "tool_calls_per_run": 9.46,
+ "retries_total": 42,
+ "llm_cache_hit_rate": 0.107,
+ "full_cache_runs": 1,
+ "http_cache_hit_rate": 0.311,
+ "wasted_calls_on_bad_input": 3,
+ "config": "v1",
+ "provider": "local",
+ "date": "2026-10-31",
+ "failures": []
+}

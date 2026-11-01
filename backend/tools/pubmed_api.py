@@ -1,4 +1,6 @@
-import httpx
+import xml.etree.ElementTree as ET
+
+from tools import net as httpx
 
 BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
@@ -43,12 +45,24 @@ async def search_papers(query: str, max_results: int = 5) -> list:
 
 
 async def fetch_abstract(pmid: str) -> str:
-    """Fetch the abstract text for a PubMed article."""
+    """Title + abstract text for a PubMed article (parsed from XML: the plain-text 'abstract' format
+    leads with a citation header and author affiliations, which is not the abstract)."""
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.get(
             f"{BASE}/efetch.fcgi",
-            params={"db": "pubmed", "id": pmid, "rettype": "abstract", "retmode": "text"},
+            params={"db": "pubmed", "id": pmid, "retmode": "xml"},
         )
         if r.status_code != 200:
             return ""
-        return r.text.strip()
+    try:
+        root = ET.fromstring(r.content)
+    except ET.ParseError:
+        return ""
+    title = "".join(root.findtext(".//ArticleTitle") or "").strip()
+    parts = []
+    for node in root.iter("AbstractText"):
+        text = "".join(node.itertext()).strip()
+        if text:
+            label = node.get("Label")
+            parts.append(f"{label}: {text}" if label else text)
+    return " ".join(x for x in [title + "." if title else "", " ".join(parts)] if x).strip()

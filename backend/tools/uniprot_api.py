@@ -1,5 +1,5 @@
 from typing import Optional
-import httpx
+from tools import net as httpx
 
 BASE = "https://rest.uniprot.org/uniprotkb"
 

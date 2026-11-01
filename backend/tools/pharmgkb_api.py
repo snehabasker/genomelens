@@ -1,4 +1,4 @@
-import httpx
+from tools import net as httpx
 
 # PharmGKB was rebranded ClinPGx; the old api.pharmgkb.org host no longer resolves.
 BASE = "https://api.clinpgx.org/v1/data"

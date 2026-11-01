@@ -1,0 +1,10 @@
+# Only HTTP on the app port may reach the pods; everything else inbound is denied.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: genome-lens-ingress
+spec:
+  podSelector: {matchLabels: {app: genome-lens}}
+  policyTypes: [Ingress]
+  ingress:
+    - ports: [{port: 8080, protocol: TCP}]

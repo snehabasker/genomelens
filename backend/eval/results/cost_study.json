@@ -1,0 +1,52 @@
+{
+ "rows": [
+  {
+   "label": "v0 original: claude-opus-5-5 prose synthesis, no verifier, no cache",
+   "per_request_usd": 0.013568352941176469,
+   "per_1k_usd": 13.56835294117647,
+   "note": "356 in / 607 out tokens (6 evidence items, no citations)"
+  },
+  {
+   "label": "claude-opus-5-5 synthesis + haiku-5-5 verifier, no cache",
+   "per_request_usd": 0.015212574999999999,
+   "per_1k_usd": 15.212575,
+   "note": "1757 in / 399 out synthesis tokens; 1262 / 170 verifier"
+  },
+  {
+   "label": "claude-sonnet-5-5 synthesis + haiku-5-5 verifier, no cache",
+   "per_request_usd": 0.007711775,
+   "per_1k_usd": 7.711774999999999,
+   "note": "1757 in / 399 out synthesis tokens; 1262 / 170 verifier"
+  },
+  {
+   "label": "claude-haiku-5-5 synthesis + haiku-5-5 verifier, no cache",
+   "per_request_usd": 0.000586015,
+   "per_1k_usd": 0.586015,
+   "note": "1757 in / 399 out synthesis tokens; 1262 / 170 verifier"
+  },
+  {
+   "label": "claude-opus-5-5 stack, 25% of requests served from cache",
+   "per_request_usd": 0.01140943125,
+   "per_1k_usd": 11.409431249999999,
+   "note": "saving = hit rate (25%); a hit costs $0 (measured below)"
+  },
+  {
+   "label": "claude-opus-5-5 stack, 50% of requests served from cache",
+   "per_request_usd": 0.0076062874999999995,
+   "per_1k_usd": 7.6062875,
+   "note": "saving = hit rate (50%); a hit costs $0 (measured below)"
+  },
+  {
+   "label": "claude-opus-5-5 stack, 75% of requests served from cache",
+   "per_request_usd": 0.0038031437499999998,
+   "per_1k_usd": 3.80314375,
+   "note": "saving = hit rate (75%); a hit costs $0 (measured below)"
+  }
+ ],
+ "notes": [
+  "Token counts are measured from the local model's tokenizer, so they approximate Claude's. Treat dollars as an estimate, not a bill.",
+  "Measured warm-cache pass: 34265 ms p50 vs 54333 ms cold; HTTP cache hit rate 0.841 vs 0.311; LLM cache hit rate 0.733 (the rest missed because a flaky upstream call changed the evidence, hence the prompt).",
+  "v1 sends 4.9x the synthesis input tokens of v0 (every evidence item, with IDs) and adds one verifier call per claim: reliability is bought with tokens, not free. Caching is what claws it back.",
+  "Prompt caching does not apply: the prompts are far below the minimum cacheable prefix. Response caching is the lever."
+ ]
+}

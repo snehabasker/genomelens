@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: genome-lens
+data:
+  AUTH_ENABLED: "true"
+  OIDC_ISSUER: "https://accounts.google.com"
+  OIDC_AUDIENCE: "CHANGE_ME.apps.googleusercontent.com"
+  AUTH_ALLOWED_EMAIL_DOMAINS: ""
+  DAILY_BUDGET_USD: "2.00"
+  RATE_LIMIT_RUNS: "10"

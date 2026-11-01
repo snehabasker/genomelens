@@ -1,4 +1,4 @@
-import httpx
+from tools import net as httpx
 
 BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
