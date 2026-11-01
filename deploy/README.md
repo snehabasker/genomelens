@@ -47,6 +47,9 @@ Single replica with `Recreate` for the same SQLite reason; scaling out needs Red
 
 ## Status
 
-Unit-tested: the auth module (`backend/tests/test_auth.py`). **Not executed:** the manifests, Cloud Build config and
-bootstrap script have been syntax-checked only, with no GCP project or cluster available here. Expect to fix small
-things on the first real deploy.
+- Unit-tested: the auth module (`backend/tests/test_auth.py`).
+- **Verified on a local `kind` cluster** (`deploy/k8s/kind-test.sh`): the image builds, and the Deployment passes the
+  `restricted` Pod Security namespace with a read-only root FS and rolls out. `/api/health` answers through a Service
+  port-forward. Run with auth off and without the GKE-only ingress.
+- **Not executed:** the Cloud Build config, `bootstrap.sh`, the GKE ingress/managed cert, and auth-on behaviour in
+  the cluster. These need a real GCP project and identity provider.
