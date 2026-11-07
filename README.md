@@ -105,6 +105,28 @@ The **[post-mortem](docs/postmortem.md)** explains each failure and how it was f
 (a verifier change that silently collapsed the grounding metric, a response cache that could never hit, a real Ensembl
 outage mid-project, and an allele the original code invented). The table above was measured before the allele fix; see section 9. It also lists what did *not* work.
 
+## Learned variant prior (XGBoost + TensorFlow)
+
+`backend/ml/` trains two models on 72,264 expert-curated missense variants from UniProt humsavar (LP/P vs LB/B,
+VUS dropped) using substitution features only (BLOSUM62, hydropathy, volume, charge, polarity, Pro/Gly/Cys flags).
+Evaluation is split **by gene**, so a model cannot memorise a gene's pathogenic rate.
+
+| Model (14,604 held-out variants, 2,539 unseen genes) | AUROC | AUPRC |
+|---|---|---|
+| BLOSUM62 dissimilarity baseline | 0.657 | 0.564 |
+| XGBoost | 0.710 | 0.646 |
+| Keras MLP (TensorFlow) | 0.711 | 0.650 |
+| Mean ensemble | 0.711 | 0.648 |
+
+This is a modest gain over the baseline and is deliberately a weak prior: it sees no gene, conservation or
+structure information. It does not replace ClinVar or the grounded agents.
+
+```bash
+pip install -r backend/requirements-ml.txt
+cd backend && python -m ml.train                      # ~30 s on CPU, writes ml/artifacts/
+python -c "from ml.predict import predict_missense as p; print(p('p.Gly100Asp'))"
+```
+
 ## Deploying (Hugging Face Spaces, Docker SDK)
 
 The repo root `Dockerfile` builds the frontend and serves everything from one container on port 7860. Create a Space with

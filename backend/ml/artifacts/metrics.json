@@ -1,0 +1,35 @@
+{
+  "dataset": "UniProt humsavar LP/P vs LB/B",
+  "n_total": 72264,
+  "n_train": 48859,
+  "n_test": 14604,
+  "test_genes": 2539,
+  "positive_rate": 0.447,
+  "split": "grouped by gene (no gene appears in both train and test)",
+  "blosum62_baseline": {
+    "auroc": 0.6572,
+    "auprc": 0.5644
+  },
+  "xgboost": {
+    "auroc": 0.7099,
+    "auprc": 0.6457
+  },
+  "keras_mlp": {
+    "auroc": 0.7106,
+    "auprc": 0.6502
+  },
+  "ensemble_mean": {
+    "auroc": 0.7113,
+    "auprc": 0.6483
+  },
+  "xgboost_importance": {
+    "blosum": 0.2287,
+    "to_cys": 0.065,
+    "ref_arom": 0.0647,
+    "ref_charge": 0.0619,
+    "ref_volume": 0.0601,
+    "d_hydro": 0.0531,
+    "alt_arom": 0.0498,
+    "d_polarity": 0.0432
+  }
+}
