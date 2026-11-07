@@ -107,25 +107,33 @@ outage mid-project, and an allele the original code invented). The table above w
 
 ## Learned variant prior (XGBoost + TensorFlow)
 
-`backend/ml/` trains two models on 72,264 expert-curated missense variants from UniProt humsavar (LP/P vs LB/B,
-VUS dropped) using substitution features only (BLOSUM62, hydropathy, volume, charge, polarity, Pro/Gly/Cys flags).
-Evaluation is split **by gene**, so a model cannot memorise a gene's pathogenic rate.
+`backend/ml/` trains on 72,264 expert-curated missense variants from UniProt humsavar (LP/P vs LB/B, VUS dropped),
+joined to the Swiss-Prot human sequences (all 72,264 reference residues verified against the sequence). Evaluation is
+split **by gene**: the 14,604 test variants come from 2,539 genes the models never saw, so a model cannot score well by
+memorising a gene's pathogenic rate.
 
-| Model (14,604 held-out variants, 2,539 unseen genes) | AUROC | AUPRC |
-|---|---|---|
-| BLOSUM62 dissimilarity baseline | 0.657 | 0.564 |
-| XGBoost | 0.710 | 0.646 |
-| Keras MLP (TensorFlow) | 0.711 | 0.650 |
-| Mean ensemble | 0.711 | 0.648 |
+| Tier | Model | AUROC | AUPRC |
+|---|---|---|---|
+| baseline | BLOSUM62 dissimilarity | 0.657 | 0.564 |
+| substitution-only | XGBoost | 0.709 | 0.646 |
+| substitution-only | Keras MLP (TensorFlow) | 0.711 | 0.650 |
+| protein-context | XGBoost (+ window features) | 0.785 | 0.756 |
+| protein-context | **TensorFlow 1D-CNN** over the ±15 residue window, fused with tabular features | 0.795 | 0.759 |
+| protein-context | **XGBoost + CNN ensemble** | **0.804** | **0.776** |
 
-This is a modest gain over the baseline and is deliberately a weak prior: it sees no gene, conservation or
-structure information. It does not replace ClinVar or the grounded agents.
+Context features come from the wild-type sequence only: relative position, terminal distance, local hydropathy /
+charge / volume windows, Gly-Pro and Cys density, window entropy, a transmembrane-helix proxy, protein composition.
 
 ```bash
 pip install -r backend/requirements-ml.txt
-cd backend && python -m ml.train                      # ~30 s on CPU, writes ml/artifacts/
-python -c "from ml.predict import predict_missense as p; print(p('p.Gly100Asp'))"
+cd backend && python -m ml.train        # ~4 min on CPU; downloads humsavar once, writes ml/artifacts/
+python -c "from ml.predict import predict_missense as p; print(p('p.Phe508Ser', accession='P13569'))"
 ```
+
+**Limits.** It is a prior, not a classifier you can act on: no multiple-sequence alignment, conservation or 3D
+structure, and published tools using those score higher. Individual calls can be badly wrong; for example the
+sickle-cell variant HBB p.Glu7Val scores only 0.20 while CFTR p.Phe508Ser scores 0.83. Labels are literature
+curation, so they carry curation bias. It does not replace ClinVar or the grounded agents and is not wired into them.
 
 ## Deploying (Hugging Face Spaces, Docker SDK)
 
