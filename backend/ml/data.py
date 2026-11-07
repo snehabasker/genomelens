@@ -33,5 +33,23 @@ def load(path: Path | None = None) -> list[dict]:
         if ref not in AA or alt not in AA or (gene, ref, pos, alt) in seen:
             continue
         seen.add((gene, ref, pos, alt))
-        rows.append({"gene": gene, "ref": ref, "pos": pos, "alt": alt, "label": int(parts[4] == "LP/P")})
+        rows.append({"gene": gene, "acc": parts[1], "ref": ref, "pos": pos, "alt": alt, "label": int(parts[4] == "LP/P")})
     return rows
+
+
+FASTA = Path(__file__).parent / "data" / "human.fasta"
+
+
+def load_sequences(path: Path = FASTA) -> dict[str, str]:
+    """accession -> sequence from a UniProt FASTA (reviewed human proteins)."""
+    seqs, acc, buf = {}, None, []
+    for line in path.read_text().splitlines():
+        if line.startswith(">"):
+            if acc:
+                seqs[acc] = "".join(buf)
+            acc, buf = line.split("|")[1], []
+        else:
+            buf.append(line.strip())
+    if acc:
+        seqs[acc] = "".join(buf)
+    return seqs

@@ -76,3 +76,53 @@ def featurize(ref: str, pos: int, alt: str) -> list[float]:
 
 def featurize_many(changes: list[tuple[str, int, str]]) -> np.ndarray:
     return np.asarray([featurize(*c) for c in changes], dtype=np.float32)
+
+
+# --- protein-context features (need the wild-type sequence) -------------------------------------------------------
+WIN = 15                                     # CNN half-window: 31 residues centred on the variant
+CTX_NAMES = ["rel_pos", "log_len", "dist_term", "kd_w3", "kd_w7", "kd_w15", "chg_w7", "vol_w7", "kd_m2", "kd_m1", "kd_p1",
+             "kd_p2", "gp_frac_w7", "chg_frac_w7", "cys_frac_w7", "entropy_w10", "same_aa_w7", "max_tm_kd19",
+             "ref_frac_protein", "cys_frac_protein", "is_n_signal"]
+
+
+def _win(seq: str, pos: int, half: int) -> str:
+    return seq[max(0, pos - 1 - half): pos + half]
+
+
+def _mean(table: dict, s: str) -> float:
+    return float(np.mean([table.get(c, 0.0) for c in s])) if s else 0.0
+
+
+def _entropy(s: str) -> float:
+    if not s:
+        return 0.0
+    p = np.array([s.count(a) for a in set(s)], dtype=float) / len(s)
+    return float(-(p * np.log2(p)).sum())
+
+
+def context_features(ref: str, pos: int, seq: str) -> list[float]:
+    n, i = len(seq), pos - 1
+    at = lambda k: KD.get(seq[i + k], 0.0) if 0 <= i + k < n else 0.0
+    w7, w10 = _win(seq, pos, 7), _win(seq, pos, 10)
+    tm = max((_mean(KD, seq[a:a + 19]) for a in range(max(0, i - 18), min(i, max(0, n - 19)) + 1)), default=0.0)
+    return [pos / n, float(np.log(n)), float(min(pos - 1, n - pos)), _mean(KD, _win(seq, pos, 3)), _mean(KD, w7),
+            _mean(KD, _win(seq, pos, 15)), _mean(CHG, w7), _mean(VOL, w7), at(-2), at(-1), at(1), at(2),
+            sum(c in "GP" for c in w7) / len(w7), sum(c in "KRDE" for c in w7) / len(w7), w7.count("C") / len(w7),
+            _entropy(w10), w7.count(ref) / len(w7), tm, seq.count(ref) / n, seq.count("C") / n,
+            float(pos <= 30 and _mean(KD, seq[:30]) > 1.0)]
+
+
+def window_onehot(seq: str, pos: int, half: int = WIN) -> np.ndarray:
+    out = np.zeros((2 * half + 1, len(AA)), dtype=np.float32)
+    for k in range(-half, half + 1):
+        j = pos - 1 + k
+        if 0 <= j < len(seq) and seq[j] in AA:
+            out[k + half, AA.index(seq[j])] = 1.0
+    return out
+
+
+def featurize_ctx(ref: str, pos: int, alt: str, seq: str) -> tuple[list[float], np.ndarray]:
+    """-> (tabular vector = substitution + context features, one-hot window). Raises if seq[pos-1] != ref."""
+    if not (1 <= pos <= len(seq)) or seq[pos - 1] != ref:
+        raise ValueError(f"reference residue {ref}{pos} does not match the sequence")
+    return featurize(ref, pos, alt) + context_features(ref, pos, seq), window_onehot(seq, pos)

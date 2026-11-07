@@ -1,5 +1,5 @@
 {
-  "dataset": "UniProt humsavar LP/P vs LB/B",
+  "dataset": "UniProt humsavar LP/P vs LB/B + Swiss-Prot human sequences",
   "n_total": 72264,
   "n_train": 48859,
   "n_test": 14604,
@@ -10,26 +10,44 @@
     "auroc": 0.6572,
     "auprc": 0.5644
   },
-  "xgboost": {
-    "auroc": 0.7099,
-    "auprc": 0.6457
+  "substitution_only": {
+    "xgboost": {
+      "auroc": 0.7093,
+      "auprc": 0.646
+    },
+    "keras_mlp": {
+      "auroc": 0.7112,
+      "auprc": 0.6502
+    },
+    "ensemble": {
+      "auroc": 0.7117,
+      "auprc": 0.6494
+    }
   },
-  "keras_mlp": {
-    "auroc": 0.7106,
-    "auprc": 0.6502
+  "protein_context": {
+    "xgboost": {
+      "auroc": 0.7845,
+      "auprc": 0.756
+    },
+    "keras_cnn": {
+      "auroc": 0.7946,
+      "auprc": 0.759
+    },
+    "ensemble": {
+      "auroc": 0.804,
+      "auprc": 0.7763
+    }
   },
-  "ensemble_mean": {
-    "auroc": 0.7113,
-    "auprc": 0.6483
-  },
-  "xgboost_importance": {
-    "blosum": 0.2287,
-    "to_cys": 0.065,
-    "ref_arom": 0.0647,
-    "ref_charge": 0.0619,
-    "ref_volume": 0.0601,
-    "d_hydro": 0.0531,
-    "alt_arom": 0.0498,
-    "d_polarity": 0.0432
+  "xgboost_context_importance": {
+    "blosum": 0.1872,
+    "from_cys": 0.046,
+    "ref_arom": 0.0353,
+    "log_len": 0.0321,
+    "ref_volume": 0.0301,
+    "alt_hydro": 0.0297,
+    "from_gly": 0.0296,
+    "max_tm_kd19": 0.027,
+    "cys_frac_protein": 0.0268,
+    "d_hydro": 0.0254
   }
 }
