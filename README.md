@@ -105,6 +105,36 @@ The **[post-mortem](docs/postmortem.md)** explains each failure and how it was f
 (a verifier change that silently collapsed the grounding metric, a response cache that could never hit, a real Ensembl
 outage mid-project, and an allele the original code invented). The table above was measured before the allele fix; see section 9. It also lists what did *not* work.
 
+## Learned variant prior (XGBoost + TensorFlow)
+
+`backend/ml/` trains on 72,264 expert-curated missense variants from UniProt humsavar (LP/P vs LB/B, VUS dropped),
+joined to the Swiss-Prot human sequences (all 72,264 reference residues verified against the sequence). Evaluation is
+split **by gene**: the 14,604 test variants come from 2,539 genes the models never saw, so a model cannot score well by
+memorising a gene's pathogenic rate.
+
+| Tier | Model | AUROC | AUPRC |
+|---|---|---|---|
+| baseline | BLOSUM62 dissimilarity | 0.657 | 0.564 |
+| substitution-only | XGBoost | 0.709 | 0.646 |
+| substitution-only | Keras MLP (TensorFlow) | 0.711 | 0.650 |
+| protein-context | XGBoost (+ window features) | 0.785 | 0.756 |
+| protein-context | **TensorFlow 1D-CNN** over the ±15 residue window, fused with tabular features | 0.795 | 0.759 |
+| protein-context | **XGBoost + CNN ensemble** | **0.804** | **0.776** |
+
+Context features come from the wild-type sequence only: relative position, terminal distance, local hydropathy /
+charge / volume windows, Gly-Pro and Cys density, window entropy, a transmembrane-helix proxy, protein composition.
+
+```bash
+pip install -r backend/requirements-ml.txt
+cd backend && python -m ml.train        # ~4 min on CPU; downloads humsavar once, writes ml/artifacts/
+python -c "from ml.predict import predict_missense as p; print(p('p.Phe508Ser', accession='P13569'))"
+```
+
+**Limits.** It is a prior, not a classifier you can act on: no multiple-sequence alignment, conservation or 3D
+structure, and published tools using those score higher. Individual calls can be badly wrong; for example the
+sickle-cell variant HBB p.Glu7Val scores only 0.20 while CFTR p.Phe508Ser scores 0.83. Labels are literature
+curation, so they carry curation bias. It does not replace ClinVar or the grounded agents and is not wired into them.
+
 ## Deploying (Hugging Face Spaces, Docker SDK)
 
 The repo root `Dockerfile` builds the frontend and serves everything from one container on port 7860. Create a Space with

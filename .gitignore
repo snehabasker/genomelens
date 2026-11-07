@@ -17,3 +17,6 @@ __pycache__/
 *.db-shm
 backend/eval/.cache/
 backend/smoke_tmp.py
+
+# ML: raw training data is re-downloadable (python -m ml.train)
+backend/ml/data/
